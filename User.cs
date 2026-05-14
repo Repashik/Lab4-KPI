@@ -7,6 +7,19 @@ public abstract class User
 	protected string id;
 	protected bool isLoggedIn = false;
 
+    // Властивості (додайте валідацію, якщо хочете)
+    public string Name
+	{
+		get {  return name; }
+		set { name = value; }
+	}
+
+	public string Id
+	{
+		get { return id;}
+		set { id = value; }
+	}
+
     // Метод для створення коментаря до завдання (список і структура в Task.cs)
     public void CreateComment(string message, Task task)
 	{
@@ -33,4 +46,11 @@ public abstract class User
 	{
 		Console.Write($"Ім'я: {this.name}, ID: {this.id}");
     }
+
+	// Конструктор
+	protected User(string name, string id)
+	{
+		this.Name = name;
+		this.Id = id;
+	}
 }

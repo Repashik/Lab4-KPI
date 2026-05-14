@@ -1,6 +1,6 @@
 ﻿namespace TimeAccountingSystem;
 
-enum Role
+public enum Role
 {
     Admin,
     Manager,

@@ -2,4 +2,9 @@
 
 public class Employee: Staff
 {
+    // Конструктор (зсилається на батьківські класи)
+    public Employee(string name, string id, decimal salary, decimal bonus)
+        : base(name, id, salary, bonus)
+    {
+    }
 }
