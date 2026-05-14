@@ -5,6 +5,7 @@ public abstract class Staff: User
     // Характеристики менеджера та робітника
     private decimal salary;
     private decimal bonus;
+    private UserInfo info;
 
     // Властивості (додайте валідацію, якщо хочете)
     public decimal Salary
@@ -37,5 +38,6 @@ public abstract class Staff: User
     {
         this.Salary = salary;
         this.Bonus = bonus;
+        this.info = new UserInfo();
     }
 }
