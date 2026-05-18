@@ -66,6 +66,8 @@ void ShowAuthMenu()
             user.LogIn(name, id);
             currentUser = user;
             Console.WriteLine("Успішний вхід!");
+
+            ShowDeadlineWarnings(currentUser); //виводить інформацію про прострочений дедлайн якщо юзер робітник або менеджер
         }
         else throw new Exception("Користувача не знайдено або дані невірні.");
     }
@@ -147,6 +149,11 @@ void ShowManagerMenu(Manager manager)
     Console.WriteLine("2. Видалити завдання");
     Console.WriteLine("3. Додати етап (Stage) до завдання");
     Console.WriteLine("4. Список завдань");
+    Console.WriteLine("5. Редагувати завдання (Edit Task)");
+    Console.WriteLine("6. Редагувати етап (Edit Stage)");
+    Console.WriteLine("7. Видалити етап (Delete Stage)");
+    Console.WriteLine("8. Загальний витрачений час (Calculate Total Time)");
+    Console.WriteLine("9. Додати коментар до завдання (Create Comment)");
     Console.WriteLine("0. Вийти з акаунта");
     Console.Write("Вибір: ");
 
@@ -181,20 +188,117 @@ void ShowManagerMenu(Manager manager)
         Console.Write("Вага етапу (число): "); int weight = int.Parse(Console.ReadLine() ?? "1");
 
         manager.AddStage(task, sName, weight);
-        Console.WriteLine("Етап додано!");
+
+        if (task.Stages.Any())
+        {
+            task.Stages.Last().StartTime = DateTime.Now;
+        }
+
+        Console.WriteLine("Етап додано! Відлік часу для цього етапу розпочато.");
         Console.ReadLine();
     }
     else if (choice == "4")
     {
         foreach (var t in globalTasks)
         {
-            Console.WriteLine($"- Завдання: {t.Name} (Прогрес: {t.CalulateProgress()}%)");
+            string deadlineStr = t.deadLine.HasValue ? t.deadLine.Value.ToString("dd.MM.yyyy HH:mm") : "Немає";
+            string warning = (t.deadLine.HasValue && t.deadLine.Value < DateTime.Now && t.CalulateProgress() < 100)
+                             ? " [ПРОСТРОЧЕНО]" : "";
+
+            Console.WriteLine($"- Завдання: {t.Name} (Прогрес: {t.CalulateProgress()}%){warning} | Дедлайн: {deadlineStr}");
+
             foreach (var s in t.Stages)
             {
                 string status = s.EndTime.HasValue ? "Виконано" : "В процесі";
-                Console.WriteLine($"   -> Етап: {s.Name} [{status}]");
+                Console.WriteLine($"   -> Етап: {s.Name} (Вага: {s.Weight}) [{status}]");
+            }
+            if (t.Comments.Any())
+            {
+                Console.WriteLine("   -> Коментарі:");
+                foreach (var c in t.Comments)
+                    Console.WriteLine($"      [{c.Author.Name}]: {c.Message}");
             }
         }
+        Console.ReadLine();
+    }
+    else if (choice == "5")
+    {
+        Console.Write("Введіть точну назву завдання для редагування: ");
+        string inputName = Console.ReadLine() ?? "";
+        var task = globalTasks.FirstOrDefault(t => t.Name == inputName);
+        if (task == null) throw new Exception("Завдання не знайдено");
+
+        Console.Write("Нова назва (натисніть Enter, щоб не змінювати): ");
+        string nName = Console.ReadLine() ?? "";
+        Console.Write("Новий опис (натисніть Enter, щоб не змінювати): ");
+        string nDesc = Console.ReadLine() ?? "";
+
+        manager.EditTask(task,
+            string.IsNullOrWhiteSpace(nName) ? null : nName,
+            string.IsNullOrWhiteSpace(nDesc) ? null : nDesc);
+        Console.WriteLine("Завдання успішно відредаговано!");
+        Console.ReadLine();
+    }
+    else if (choice == "6")
+    {
+        Console.Write("Введіть назву завдання: ");
+        string taskName = Console.ReadLine() ?? "";
+        var task = globalTasks.FirstOrDefault(t => t.Name == taskName);
+        if (task == null) throw new Exception("Завдання не знайдено");
+
+        Console.Write("Введіть назву етапу: ");
+        string stageName = Console.ReadLine() ?? "";
+        var stage = task.Stages.FirstOrDefault(s => s.Name == stageName);
+        if (stage == null) throw new Exception("Етап не знайдено");
+
+        Console.Write("Нова назва етапу (натисніть Enter, щоб не змінювати): ");
+        string nName = Console.ReadLine() ?? "";
+        Console.Write("Нова вага етапу (натисніть Enter, щоб не змінювати): ");
+        string wStr = Console.ReadLine() ?? "";
+        int? nWeight = string.IsNullOrWhiteSpace(wStr) ? null : int.Parse(wStr);
+
+        manager.EditStage(stage, string.IsNullOrWhiteSpace(nName) ? null : nName, nWeight);
+        Console.WriteLine("Етап успішно відредаговано!");
+        Console.ReadLine();
+    }
+    else if (choice == "7")
+    {
+        Console.Write("Введіть назву завдання: ");
+        string taskName = Console.ReadLine() ?? "";
+        var task = globalTasks.FirstOrDefault(t => t.Name == taskName);
+        if (task == null) throw new Exception("Завдання не знайдено");
+
+        Console.Write("Введіть назву етапу для видалення: ");
+        string stageName = Console.ReadLine() ?? "";
+        var stage = task.Stages.FirstOrDefault(s => s.Name == stageName);
+        if (stage == null) throw new Exception("Етап не знайдено");
+
+        manager.DeleteStage(task, stage);
+        Console.WriteLine("Етап видалено!");
+        Console.ReadLine();
+    }
+    else if (choice == "8")
+    {
+        Console.Write("Введіть назву завдання: ");
+        string taskName = Console.ReadLine() ?? "";
+        var task = globalTasks.FirstOrDefault(t => t.Name == taskName);
+        if (task == null) throw new Exception("Завдання не знайдено");
+
+        TimeSpan total = task.CalculateTotalTime();
+        Console.WriteLine($"Загальний зафіксований час: {total.Days} дн, {total.Hours} год, {total.Minutes} хв, {total.Seconds} сек.");
+        Console.ReadLine();
+    }
+    else if (choice == "9")
+    {
+        Console.Write("Введіть назву завдання: ");
+        string taskName = Console.ReadLine() ?? "";
+        var task = globalTasks.FirstOrDefault(t => t.Name == taskName);
+        if (task == null) throw new Exception("Завдання не знайдено");
+
+        Console.Write("Введіть текст коментаря: ");
+        string msg = Console.ReadLine() ?? "";
+        manager.CreateComment(msg, task);
+        Console.WriteLine("Коментар додано!");
         Console.ReadLine();
     }
 }
@@ -206,8 +310,9 @@ void ShowEmployeeMenu(Employee employee)
 {
     Console.Clear();
     Console.WriteLine($"=== ПАНЕЛЬ РОБІТНИКА ({employee.Name}) ===");
-    Console.WriteLine("1. Переглянути завдання та етапи");
+    Console.WriteLine("1. Переглянути завдання, етапи та коментарі");
     Console.WriteLine("2. Завершити етап");
+    Console.WriteLine("3. Додати коментар до завдання (Create Comment)");
     Console.WriteLine("0. Вийти з акаунта");
     Console.Write("Вибір: ");
 
@@ -218,11 +323,21 @@ void ShowEmployeeMenu(Employee employee)
     {
         foreach (var t in globalTasks)
         {
-            Console.WriteLine($"Завдання: {t.Name}");
+            string deadlineStr = t.deadLine.HasValue ? t.deadLine.Value.ToString("dd.MM.yyyy HH:mm") : "Немає";
+            string warning = (t.deadLine.HasValue && t.deadLine.Value < DateTime.Now && t.CalulateProgress() < 100)
+                             ? " [ПРОСТРОЧЕНО]" : "";
+
+            Console.WriteLine($"Завдання: {t.Name}{warning} | Дедлайн: {deadlineStr}");
             for (int i = 0; i < t.Stages.Count; i++)
             {
                 string status = t.Stages[i].EndTime.HasValue ? "Виконано" : "Очікує";
                 Console.WriteLine($"  {i}. {t.Stages[i].Name} - {status}");
+            }
+            if (t.Comments.Any())
+            {
+                Console.WriteLine("  Коментарі:");
+                foreach (var c in t.Comments)
+                    Console.WriteLine($"    [{c.Author.Name}]: {c.Message}");
             }
         }
         Console.ReadLine();
@@ -240,10 +355,62 @@ void ShowEmployeeMenu(Employee employee)
         if (sIndex >= 0 && sIndex < task.Stages.Count)
         {
             employee.CompleteStage(task.Stages[sIndex]);
-            Console.WriteLine("Етап успішно завершено!");
+            Console.WriteLine("Етап успішно завершено! Час зафіксовано.");
         }
         else throw new Exception("Невірний номер етапу");
 
+        Console.ReadLine();
+    }
+    else if (choice == "3")
+    {
+        Console.Write("Введіть назву завдання: ");
+        string taskName = Console.ReadLine() ?? "";
+        var task = globalTasks.FirstOrDefault(t => t.Name == taskName);
+        if (task == null) throw new Exception("Завдання не знайдено");
+
+        Console.Write("Введіть текст коментаря: ");
+        string msg = Console.ReadLine() ?? "";
+        employee.CreateComment(msg, task);
+        Console.WriteLine("Коментар відправлено!");
+        Console.ReadLine();
+    }
+}
+
+// ==========================================
+// ФУНКЦІЯ ПОПЕРЕДЖЕННЯ ПРО ДЕДЛАЙНИ
+// ==========================================
+void ShowDeadlineWarnings(User user)
+{
+    bool hasWarnings = false;
+
+    foreach (var t in globalTasks)
+    {
+        // Перевіряємо, чи встановлений дедлайн, чи пройшов час і чи завдання не завершене
+        if (t.deadLine.HasValue && t.deadLine.Value < DateTime.Now && t.CalulateProgress() < 100)
+        {
+            if (!hasWarnings)
+            {
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Red;
+            }
+
+            if (user is Employee)
+            {
+                Console.WriteLine($"[ПОПЕРЕДЖЕННЯ] Завдання '{t.Name}' прострочено! Дедлайн був: {t.deadLine.Value}");
+            }
+            else if (user is Manager)
+            {
+                Console.WriteLine($"[ПОВІДОМЛЕННЯ ПРО ЗАТРИМКУ] Завдання '{t.Name}' не виконано вчасно! Дедлайн: {t.deadLine.Value}");
+            }
+
+            hasWarnings = true;
+        }
+    }
+
+    if (hasWarnings)
+    {
+        Console.ResetColor();
+        Console.WriteLine("\nНатисніть Enter для переходу до панелі керування...");
         Console.ReadLine();
     }
 }
