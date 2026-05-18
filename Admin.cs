@@ -33,12 +33,6 @@ public class Admin: User
     // Метод для видалення користувача
     public void Delete(string id, List<User> users)
     {
-        foreach (User user in users)
-        {
-            if (user.Id == id)
-            {
-                users.Remove(user);
-            }
-        }
+        users.RemoveAll(u => u.Id == id);
     }
 }

@@ -7,4 +7,9 @@ public class Employee: Staff
         : base(name, id, salary, bonus)
     {
     }
+
+    public void CompleteStage(Stage stage)
+    {
+        stage.EndTime = DateTime.Now;
+    }
 }
